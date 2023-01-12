@@ -1,8 +1,8 @@
-# Template for C Projects
+# RUWAQ
 
 -----
 
-This repository is a template to be used in new projects developed in C language.
+RUWAQ is a multi-board firmware to interface with hardware for run automated tests.
 
 **Table of Contents**
 
@@ -11,8 +11,16 @@ This repository is a template to be used in new projects developed in C language
 
 ## How to use
 
-When create a new repository on GitHub use this a start template to create it.
+RUWAQ is a multi-board firmware to allow [SIRU](https://github.com/labmicro/siru) tool to run automated tests on hardware, designed to be used in the development of embedded systems.
+
+To compile it is required to have cloned this repository and also the base structure provided by the framework [MUJU](https://github.com/labmicro/muju). Eventually, the `MUJU` path must be corrected in the `makefile` of this project and then it can be compiled and flash to the board with the command
+
+```console
+make download
+```
+
+**At this moment this project is in development, and it only has support for the EDU-CIAA-NXP boards.**
 
 ## License
 
-This template is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`RUWAQ` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
