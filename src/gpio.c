@@ -85,8 +85,8 @@ bool RegisterGpioMethods(void) {
     for (index = 0; index < GPIO_OUTPUTS_COUNT; index++) {
         GpioSetDirection(outputs[index], true);
     }
-    result = result && PreatRegisterOutput(0x010, ActivateOutput, SINGLE_UINT8_PARAM);
-    result = result && PreatRegisterOutput(0x010, DeactivateOutput, SINGLE_UINT8_PARAM);
+    result = result && PreatRegister(0x010, ActivateOutput, SINGLE_UINT8_PARAM);
+    result = result && PreatRegister(0x010, DeactivateOutput, SINGLE_UINT8_PARAM);
     return result;
 }
 

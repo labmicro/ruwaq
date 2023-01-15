@@ -36,6 +36,7 @@ SPDX-License-Identifier: MIT
 /* === Headers files inclusions ================================================================ */
 
 #include "protocol.h"
+#include "assertion.h"
 
 /* === Cabecera C++ ============================================================================ */
 

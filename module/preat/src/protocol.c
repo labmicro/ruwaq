@@ -34,6 +34,7 @@ SPDX-License-Identifier: MIT
 
 #include "protocol.h"
 #include "crc.h"
+#include "assertion.h"
 #include <string.h>
 
 /* === Macros definitions ====================================================================== */
@@ -41,6 +42,8 @@ SPDX-License-Identifier: MIT
 #define HANDLERS_POOL_SIZE 128
 
 #define ID_NOT_FOUND       0xFFFF
+
+#define InternalsCount()   sizeof(internals) / sizeof(struct handler_descriptor_s)
 
 /* === Private data type declarations ========================================================== */
 
@@ -51,15 +54,24 @@ typedef struct preat_message_s {
 } * preat_message_t;
 
 typedef struct handler_descriptor_s {
-    uint16_t id;
-    preat_output_t handler;
+    bool output : 1;
+    uint16_t id : 15;
+    preat_method_t handler;
     preat_type_t const * parameters;
-} * handler_descriptor_t;
+} const * handler_descriptor_t;
 
 typedef struct handlers_pool_s {
     uint16_t next_free;
     struct handler_descriptor_s pool[HANDLERS_POOL_SIZE];
 } * handlers_pool_t;
+
+typedef struct waiting_assertion_s {
+    uint32_t start;
+    uint32_t stop;
+    uint8_t conditions;
+    struct preat_message_s methods[8];
+    bool active;
+} * waiting_assertion_t;
 
 /* === Private variable declarations =========================================================== */
 
@@ -69,22 +81,35 @@ typedef struct handlers_pool_s {
 
 const preat_type_t SINGLE_UINT8_PARAM[] = {TYPE_UINT8, TYPE_UNDEFINED};
 
+const preat_type_t WAIT_ASSERT_PARAM[] = {TYPE_UINT32, TYPE_UINT32, TYPE_UINT8, TYPE_UINT8,
+                                          TYPE_UNDEFINED};
+
 /* === Private variable definitions ============================================================ */
 
 static struct handlers_pool_s handlers = {0};
+
+static const struct handler_descriptor_s internals[] = {
+    {.id = 0x005, .handler = AssertStart, .parameters = WAIT_ASSERT_PARAM},
+};
 
 /* === Private function implementation ========================================================= */
 
 static handler_descriptor_t FindDescriptor(uint16_t id) {
     handler_descriptor_t result = NULL;
-
-    for (uint16_t index = 0; index < handlers.next_free; index++) {
-        if (handlers.pool[index].id == id) {
-            result = &(handlers.pool[index]);
+    for (uint16_t index = 0; index < InternalsCount(); index++) {
+        if (internals[index].id == id) {
+            result = &internals[index];
             break;
         }
     }
-
+    if (result == NULL) {
+        for (uint16_t index = 0; index < handlers.next_free; index++) {
+            if (handlers.pool[index].id == id) {
+                result = &(handlers.pool[index]);
+                break;
+            }
+        }
+    }
     return result;
 }
 
@@ -120,6 +145,24 @@ static preat_error_t DecodeFrame(uint8_t * frame, preat_message_t message) {
             parameter->type = TYPE_UINT8;
             parameter->value = frame[0];
             frame = frame + 1;
+            break;
+        case 0x02:
+            parameter->type = TYPE_UINT16;
+            parameter->value = frame[0];
+            parameter->value <<= 8;
+            parameter->value |= frame[1];
+            frame = frame + 2;
+            break;
+        case 0x03:
+            parameter->type = TYPE_UINT32;
+            parameter->value = frame[0];
+            parameter->value <<= 8;
+            parameter->value |= frame[1];
+            parameter->value <<= 8;
+            parameter->value |= frame[2];
+            parameter->value <<= 8;
+            parameter->value |= frame[3];
+            frame = frame + 4;
             break;
         }
         parameter = parameter + 1;
@@ -163,8 +206,9 @@ static void EncodeResponse(uint8_t * frame, preat_error_t result) {
 
 /* === Public function implementation ========================================================== */
 
-bool PreatRegisterOutput(uint16_t id, preat_output_t handler, preat_type_t const * parameters) {
-    handler_descriptor_t descriptor = NULL;
+bool PreatRegister(uint16_t id, bool output, preat_method_t handler,
+                   preat_type_t const * parameters) {
+    struct handler_descriptor_s * descriptor = NULL;
 
     if (handlers.next_free < HANDLERS_POOL_SIZE) {
         descriptor = &(handlers.pool[handlers.next_free]);
@@ -172,6 +216,7 @@ bool PreatRegisterOutput(uint16_t id, preat_output_t handler, preat_type_t const
     }
     if (descriptor) {
         descriptor->id = id;
+        descriptor->output = output;
         descriptor->handler = handler;
         descriptor->parameters = parameters;
     }
@@ -194,7 +239,12 @@ void PreatExecute(uint8_t * frame) {
 
     if (result == PREAT_NO_ERROR) {
         if (CompareParameters(&message, descriptor)) {
-            result = descriptor->handler(message.parameters, message.param_count);
+            if ((descriptor->output) && (AssertIsDefined())) {
+                result =
+                    AssertExecute(descriptor->handler, message.parameters, message.param_count);
+            } else {
+                result = descriptor->handler(message.parameters, message.param_count);
+            }
         } else {
             result = PREAT_PARAMETERS_ERROR;
         }

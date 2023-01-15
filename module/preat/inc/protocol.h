@@ -88,7 +88,7 @@ typedef struct preat_parameter_s {
  * @param  count            Count of parameters sended in the list of parameters
  * @return preat_error_t    Result of the execution of the method
  */
-typedef preat_error_t (*preat_output_t)(const preat_parameter_t parameters, uint8_t count);
+typedef preat_error_t (*preat_method_t)(const preat_parameter_t parameters, uint8_t count);
 
 /* === Public data type declarations =========================================================== */
 
@@ -105,12 +105,14 @@ extern const preat_type_t SINGLE_UINT8_PARAM[];
  * @brief Register a function to implemente an protocol method to drive outputs actions
  *
  * @param   id          Unique number to idetify the method in the protocol
+ * @param   output      Function implement an method for control outputs
  * @param   handler     Function to call when protocol method is excecuted
  * @param   parameters  Definition of the parameters required by the function
  * @return  true        Function could be successfully registered
  * @return  false       Function failed to register successfully
  */
-bool PreatRegisterOutput(uint16_t id, preat_output_t handler, preat_type_t const * parameters);
+bool PreatRegister(uint16_t id, bool output, preat_method_t handler,
+                   preat_type_t const * parameters);
 
 /**
  * @brief Decode a protocol frame and executes the corresponding method
