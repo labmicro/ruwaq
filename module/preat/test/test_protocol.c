@@ -94,6 +94,7 @@ static const uint8_t ACK_NO_ERROR[]          = {0x05, 0x00, 0x00, 0xa1, 0xb5};
 static const uint8_t NACK_CRC_ERROR[]        = {0x07, 0x00, 0x11, 0x10, 0x01, 0xcc, 0x08};
 static const uint8_t NACK_METHOD_ERROR[]     = {0x07, 0x00, 0x11, 0x10, 0x02, 0x6e, 0xe2};
 static const uint8_t NACK_PARAMETERS_ERROR[] = {0x07, 0x00, 0x11, 0x10, 0x03, 0xbf, 0x97};
+static const uint8_t NACK_TIMEOUT_ERROR[]    = {0x07, 0x00, 0x11, 0x10, 0x05, 0x2b, 0x36};
 // clang-format on
 
 /* === Private function implementation ========================================================= */
@@ -188,7 +189,7 @@ void test_execute_single_parameter_funcion(void) {
     TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frame, sizeof(ACK_NO_ERROR));
 }
 
-void test_execute_assert_single_condition(void) {
+void test_execute_assert_single_condition_without_error(void) {
     uint8_t frames[3][17] = {
         {0x11, 0x00, 0x54, 0x33, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x13, 0x88, 0x11, 0x01, 0x00,
          0xcd, 0x2c},
@@ -200,11 +201,46 @@ void test_execute_assert_single_condition(void) {
     TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frames[0], sizeof(ACK_NO_ERROR));
 
     PreatExecute(frames[1]);
-    TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frames[0], sizeof(ACK_NO_ERROR));
+    TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frames[1], sizeof(ACK_NO_ERROR));
 
     fake_events.calls[1].result = fake_input.event_id;
     PreatExecute(frames[2]);
+    TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frames[2], sizeof(ACK_NO_ERROR));
+
+    TEST_ASSERT_TRUE(fake_output.called);
+    TEST_ASSERT_EQUAL(0x01, fake_output.parameter);
+    TEST_ASSERT_EQUAL(1, fake_output.count);
+
+    TEST_ASSERT_TRUE(fake_input.called);
+    TEST_ASSERT_EQUAL(3, fake_input.parameter);
+    TEST_ASSERT_EQUAL(1, fake_input.count);
+
+    TEST_ASSERT_EQUAL(2, fake_events.called);
+    TEST_ASSERT_EQUAL(100, fake_events.calls[0].timeout);
+    TEST_ASSERT_FALSE(fake_events.calls[0].wait_for_all);
+    TEST_ASSERT_EQUAL(5000, fake_events.calls[1].timeout);
+    TEST_ASSERT_TRUE(fake_events.calls[1].wait_for_all);
+
+    TEST_ASSERT_TRUE(fake_cleanup.called);
+    TEST_ASSERT_EQUAL(&fake_state, fake_cleanup.state);
+}
+
+void test_execute_assert_single_condition_with_timeout(void) {
+    uint8_t frames[3][17] = {
+        {0x11, 0x00, 0x54, 0x33, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x13, 0x88, 0x11, 0x01, 0x00,
+         0xcd, 0x2c},
+        {0x07, 0x01, 0x51, 0x10, 0x03, 0xB1, 0xFA},
+        {0x07, 0x01, 0x01, 0x10, 0x01, 0xb5, 0xa3},
+    };
+
+    PreatExecute(frames[0]);
     TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frames[0], sizeof(ACK_NO_ERROR));
+
+    PreatExecute(frames[1]);
+    TEST_ASSERT_EQUAL_MEMORY(ACK_NO_ERROR, frames[1], sizeof(ACK_NO_ERROR));
+
+    PreatExecute(frames[2]);
+    TEST_ASSERT_EQUAL_MEMORY(NACK_TIMEOUT_ERROR, frames[2], sizeof(NACK_TIMEOUT_ERROR));
 
     TEST_ASSERT_TRUE(fake_output.called);
     TEST_ASSERT_EQUAL(0x01, fake_output.parameter);

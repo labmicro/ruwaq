@@ -196,7 +196,7 @@ static void EncodeResponse(uint8_t * frame, preat_error_t result) {
         frame[4] = (uint8_t)result;
 
         crc = crc_init();
-        crc = crc_update(crc, frame, sizeof(NACK) - sizeof(crc));
+        crc = crc_update(crc, frame, sizeof(NACK) - 2);
         crc = crc_finalize(crc);
 
         frame[5] = (uint8_t)(crc >> 8);
