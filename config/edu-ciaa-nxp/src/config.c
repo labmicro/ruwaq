@@ -48,6 +48,19 @@ SPDX-License-Identifier: MIT
 
 /* === Private function implementation ========================================================= */
 
+bool GpioInputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count) {
+    bool result = (count == GPIO_INPUTS_COUNT);
+
+    if (result) {
+        gpio_list[0] = HAL_GPIO0_4;
+        gpio_list[1] = HAL_GPIO0_8;
+        gpio_list[2] = HAL_GPIO0_9;
+        gpio_list[3] = HAL_GPIO1_9;
+    }
+
+    return result;
+}
+
 bool GpioOutputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count) {
     bool result = (count == GPIO_OUTPUTS_COUNT);
 

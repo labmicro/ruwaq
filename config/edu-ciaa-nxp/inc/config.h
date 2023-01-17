@@ -47,6 +47,8 @@ extern "C" {
 
 /* === Public macros definitions =============================================================== */
 
+#define GPIO_INPUTS_COUNT  4
+
 #define GPIO_OUTPUTS_COUNT 6
 
 /* === Public data type declarations =========================================================== */
@@ -54,6 +56,8 @@ extern "C" {
 /* === Public variable declarations ============================================================ */
 
 /* === Public function declarations ============================================================ */
+
+bool GpioInputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count);
 
 bool GpioOutputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count);
 

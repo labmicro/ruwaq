@@ -131,15 +131,19 @@ Cambia el estado lógico actual de la salida *output* por el valor complementari
 
 Verifica que en la entrada *input* se produzca una transición del estado 0:FALSO al 1:VERDADERO.
 
-#### `GPIO.HasFalling(uint8:input) (0x013)`
+#### `GPIO.HasFalling(uint8:input) (0x014)`
 
 Verifica que en la entrada *input* se produzca una transición del estado 1:VERDADERO al 0:FALSO.
 
-#### `GPIO.IsSet(uint8:input) (0x014)`
+#### `GPIO.HasChanged(uint8:input) (0x015)`
+
+Verifica que en la entrada *input* se produzca una transición de cualquier estado inicial al estado contrario.
+
+#### `GPIO.IsSet(uint8:input) (0x016)`
 
 Verifica que en la entrada *input* se encuentre en el valor lógico 1:VERDADERO.
 
-#### `GPIO.IsSet(uint8:input) (0x015)`
+#### `GPIO.IsSet(uint8:input) (0x017)`
 
 Verifica que en la entrada *input* se encuentre en el valor lógico 0:FALSO.
 
@@ -178,6 +182,13 @@ Se desea probar que un sistema responde a la activación de una entrada digital 
     | GPIO.Set(1)              | 07   | 01 01  | 10   | 01    | B5 A3 |
     | GPIO.Clear(2)            | 07   | 01 11  | 10   | 02    | D3 15 |
 
+3. **Secuencia de comandos usados en las pruebas**
+
+    ```
+    PC -> ATE: GPIO.Set(1)
+    PC <- ATE: STATUS.Completed()
+    ```
+
 #### Prueba de una entrada digital
 
 1. **Comandos implementados**
@@ -193,3 +204,17 @@ Se desea probar que un sistema responde a la activación de una entrada digital 
     |:----------------------------|:----:|:------:|:----:|:-----------------------:|:----:|:-----:|:-----:|
     | TEST.Assert(100,5000,1,AND) | 11   | 00 54  | 33   | 00 00 00 64 00 00 13 88 | 11   | 01 00 | CD 2C |
     | GPIO.IsClear(3)             | 07   | 01 51  | 10   | 03                      |      |       | B1 FA |
+
+
+
+3. **Secuencia de comandos usados en las pruebas**
+
+    ```
+    PC -> ATE: TEST.Assert(100,5000,1,AND)
+    PC <- ATE: STATUS.Completed()
+    PC -> ATE: GPIO.Rissing(1)
+    PC <- ATE: STATUS.Completed()
+    PC -> ATE: GPIO.Set(0)
+    PC <- ATE: STATUS.Completed(1)
+    PC <- ATE: STATUS.Completed(1)
+    ```
