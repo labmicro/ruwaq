@@ -23,8 +23,9 @@
 # SPDX-License-Identifier: MIT
 ##################################################################################################
 
+HAL_CONFIG = hal_config.h
 CONFIG = config/edu-ciaa-nxp
-MODULES = module/hal module/saio module/preat $(CONFIG)
+MODULES = module/hal module/freertos module/preat module/preat $(CONFIG)
 BOARD ?= edu-ciaa-nxp
 MUJU ?= ../muju
 

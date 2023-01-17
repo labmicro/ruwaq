@@ -32,6 +32,10 @@ SPDX-License-Identifier: MIT
 
 /* === Headers files inclusions =============================================================== */
 
+#include "FreeRTOS.h"
+#include "task.h"
+#include "event_groups.h"
+
 #include "board.h"
 #include "gpio.h"
 #include "preat.h"
@@ -45,6 +49,8 @@ SPDX-License-Identifier: MIT
 
 /* === Private variable declarations =========================================================== */
 
+EventGroupHandle_t inputs_events;
+
 /* === Private function declarations =========================================================== */
 
 /* === Public variable definitions ============================================================= */
@@ -53,25 +59,77 @@ SPDX-License-Identifier: MIT
 
 /* === Private function implementation ========================================================= */
 
+event_flags_t AssertWaitEvents(event_flags_t events, uint32_t timeout, bool wait_for_all) {
+    EventBits_t result;
+
+    xEventGroupClearBits(inputs_events, events);
+    result = xEventGroupWaitBits(inputs_events, events, pdTRUE, wait_for_all ? pdTRUE : pdFALSE,
+                                 pdMS_TO_TICKS(timeout));
+    return result;
+}
+
+void AssertSetEvent(event_id_t id) {
+    BaseType_t result, scheduling;
+
+    scheduling = pdFALSE;
+    result = xEventGroupSetBitsFromISR(inputs_events, id, &scheduling);
+    if (result != pdFAIL) {
+        portYIELD_FROM_ISR(scheduling);
+    }
+}
+
+static void ServerEvent(preat_server_t server, void * object) {
+    TaskHandle_t task = object;
+    BaseType_t result, scheduling;
+
+    scheduling = pdFALSE;
+    result = xTaskResumeFromISR(task);
+    if (result != pdFAIL) {
+        portYIELD_FROM_ISR(scheduling);
+    }
+}
+
+void ServerTask(void * object) {
+    static uint8_t frame[64] = {0};
+    preat_server_t server = object;
+
+    RegisterGpioMethods();
+
+    while (true) {
+        vTaskSuspend(NULL);
+        if (ServerReceiveCommand(server, frame)) {
+            PreatExecute(frame);
+            ServerTransmitResponse(server, frame);
+        }
+    }
+}
+
 /* === Public function implementation ========================================================== */
 
 int main(void) {
     struct hal_sci_pins_s server_pins = {0};
-    uint8_t frame[64] = {0};
-    preat_server_t preat_server;
+    preat_server_t server;
+    TaskHandle_t task;
 
     BoardSetup();
-    RegisterGpioMethods();
 
     server_pins.txd_pin = HAL_PIN_P7_1;
     server_pins.rxd_pin = HAL_PIN_P7_2;
-    preat_server = ServerStartSerial(HAL_SCI_USART2, &server_pins);
+    server = ServerStartSerial(HAL_SCI_USART2, &server_pins);
+
+    inputs_events = xEventGroupCreate();
+    xTaskCreate(ServerTask, "PreatServer", 2048, (void *)server, tskIDLE_PRIORITY + 1, &task);
+    ServerSetEventHandler(server, ServerEvent, task);
+
+    /* Arranque del sistema operativo */
+    vTaskStartScheduler();
+
+    /* vTaskStartScheduler solo retorna si se detiene el sistema operativo */
     while (true) {
-        if (ServerReceiveCommand(preat_server, frame)) {
-            PreatExecute(frame);
-            ServerTransmitResponse(preat_server, frame);
-        }
     }
+
+    /* El valor de retorno es solo para evitar errores en el compilador*/
+    return 0;
 }
 
 /* === End of documentation ==================================================================== */
