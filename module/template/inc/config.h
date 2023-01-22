@@ -23,40 +23,52 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 SPDX-License-Identifier: MIT
 *************************************************************************************************/
 
+#ifndef CONFIG_H
+#define CONFIG_H
+
 /** @file
- ** @brief Template for user settings implementation
+ ** @brief Template for user settings declarations
  **
  ** @addtogroup ruwaq ruwaq
  ** @brief Firmware for Remote Board to Excecution of Automated Tests
  ** @{ */
 
-/* === Headers files inclusions =============================================================== */
+/* === Headers files inclusions ================================================================ */
 
-#include "config.h"
+#include "hal.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-/* === Macros definitions ====================================================================== */
+/* === Cabecera C++ ============================================================================ */
 
-/* === Private data type declarations ========================================================== */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* === Private variable declarations =========================================================== */
+/* === Public macros definitions =============================================================== */
 
-/* === Private function declarations =========================================================== */
+/* clang-format off */
+#define GPIO_INPUTS_COUNT  ${digital_inputs.count}
 
-/* === Public variable definitions ============================================================= */
+#define GPIO_OUTPUTS_COUNT ${digital_outputs.count}
+/* clang-format on */
 
-/* === Private variable definitions ============================================================ */
+/* === Public data type declarations =========================================================== */
 
-/* === Private function implementation ========================================================= */
+/* === Public variable declarations ============================================================ */
 
-bool GpioOutputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count) {
-    bool result = (count == GPIO_OUTPUTS_COUNT);
+/* === Public function declarations ============================================================ */
 
-    if (result) {
-        {{ GPIO.outputs.asignation }}
-    }
-    return result;
-}
+bool GpioInputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count);
+
+bool GpioOutputsListInit(hal_gpio_bit_t gpio_list[], uint8_t count);
 
 /* === End of documentation ==================================================================== */
 
+#ifdef __cplusplus
+}
+#endif
+
 /** @} End of module definition for doxygen */
+
+#endif /* CONFIG_H */

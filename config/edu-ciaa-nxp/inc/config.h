@@ -47,9 +47,11 @@ extern "C" {
 
 /* === Public macros definitions =============================================================== */
 
+/* clang-format off */
 #define GPIO_INPUTS_COUNT  4
 
 #define GPIO_OUTPUTS_COUNT 6
+/* clang-format on */
 
 /* === Public data type declarations =========================================================== */
 
